@@ -1,0 +1,616 @@
+openapi: 3.0.0
+info:
+  title: Datablitzer API - OpenAPI 3.0
+  description: |-
+    Datablitzer api has been built for providing useful information & SEO data for specific urls and domains.
+
+        API's include -> [authentication] -> [user] -> [url sniffing] -> [payment]
+  contact:
+    email: nabeel.asif362@gmail.com
+  version: "1.0"
+servers:
+  - url: http://127.0.0.1:5001/v1
+    description: Development Server
+  - url: http://104.161.48.70:5001/v1
+    description: Production Server
+tags:
+  - name: auth
+    description: Authentication API
+  - name: user
+    description: User API
+  - name: url sniffer
+    description: Url Sniffing API
+  - name: payment
+    description: Stripe Payment API
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - auth
+      summary: Register a new user
+      description: signup as a user
+      operationId: signup
+      requestBody:
+        description: Created user object
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpRequest"
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: "#/components/schemas/SignUpRequest"
+        "400":
+          description: This email already taken.
+        "500":
+          description: Something went wrong, Please try again later.
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Login
+      description: login as a registered user
+      operationId: login
+      parameters: []
+      requestBody:
+        description: data for logging the user
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: "#/components/schemas/SignUpRequest"
+        "400":
+          description: Verify your email first.
+        "401":
+          description: Invalid email or password supplied
+        "500":
+          description: Something went wrong, Please try again later.
+      deprecated: false
+  /auth/email-verification/{token}:
+    post:
+      tags:
+        - auth
+      summary: Email verification
+      operationId: emailVerification
+      parameters:
+        - name: token
+          in: path
+          description: token for email verification
+          required: true
+          style: simple
+          schema:
+            type: string
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailVerificationRequest"
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/SignUpRequest'
+        "400":
+          description: Invalid code
+        "500":
+          description: Something went wrong, Please try again Later.
+      deprecated: false
+  /auth/forgot-password:
+    post:
+      tags:
+        - auth
+      summary: Forgot password
+      description: provide your email to forgot password
+      operationId: forgotPassword
+      parameters: []
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: "#/components/schemas/SignUpRequest"
+        "404":
+          description: User not found
+        "500":
+          description: Something went wrong, Please try again later.
+      deprecated: false
+  /auth/reset-password/{token}:
+    post:
+      tags:
+        - auth
+      summary: Reset password
+      description: reset your password
+      operationId: resetPassword
+      parameters:
+        - name: token
+          in: path
+          description: Provide token in path parameter
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Provide { code, password } in body object to reset password
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: "Password reset successful"
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: "#/components/schemas/SignUpRequest"
+        "400":
+          description: Invalid code supplied
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+  /user:
+    get:
+      tags:
+        - user
+      summary: Get my profile
+      description: Get the profile of current logged in user
+      operationId: getMyProfile
+      responses:
+        "200":
+          description: ""
+        "401":
+          description: Unauthorized User
+      deprecated: false
+      security:
+        - bearer: []
+  /user/update:
+    patch:
+      tags:
+        - user
+      summary: Update my profile
+      description: Update your profile
+      operationId: updateMyProfile
+      parameters: []
+      requestBody:
+        description: Successful operation
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMyProfileRequest"
+        required: true
+      responses:
+        "204":
+          description: ""
+          headers: {}
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+      security:
+        - bearer: []
+  /sniffer/{queueId}:
+    get:
+      tags:
+        - url sniffer
+      summary: Get sniffed urls data
+      description: ""
+      operationId: GetSniffedUrlsData
+      parameters:
+        - name: queueId
+          in: path
+          description: ""
+          required: true
+          style: simple
+          schema:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/Pet'
+          headers: {}
+        "202":
+          description: Data fetching is in progress...
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+      security:
+        - bearer: []
+  /sniffer/url:
+    post:
+      tags:
+        - url sniffer
+      summary: Add urls
+      operationId: AddUrls
+      parameters: []
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddUrlsRequest"
+        required: true
+      responses:
+        "200":
+          description: successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/Pet'
+          headers: {}
+        "402":
+          description: You do not have enough credits for this request, please buy more credits to perform this action
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+      security:
+        - bearer: []
+  /sniffer/compare:
+    post:
+      tags:
+        - url sniffer
+      summary: Compare sniffed data
+      operationId: CompareSniffedData
+      parameters: []
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompareSniffedData"
+        required: true
+      responses:
+        "200":
+          description: successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/Pet'
+          headers: {}
+        "202":
+          description: Data fetching is in progress...
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+      security:
+        - bearer: []
+  /user/urls:
+    get:
+      tags:
+        - url sniffer
+      summary: Get user urls
+      operationId: GetUserUrls
+      parameters: []
+      responses:
+        "200":
+          description: successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/Pet'
+          headers: {}
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+      security:
+        - bearer: []
+  /sniffer/queue/{queueId}:
+    delete:
+      tags:
+        - url sniffer
+      summary: Delete a queue with all urls in it.
+      parameters:
+        - name: queueId
+          in: path
+          description: ""
+          required: true
+          style: simple
+          schema:
+            type: string
+      responses:
+        "204":
+          description: queue deleted successfully
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/Pet'
+          headers: {}
+        "500":
+          description: Invalid ID supplied
+      deprecated: false
+      security:
+        - bearer: []
+  /sniffer/url/{urlId}:
+    delete:
+      tags:
+        - url sniffer
+      summary: Delete a url
+      parameters:
+        - name: urlId
+          in: path
+          description: ""
+          required: true
+          style: simple
+          schema:
+            type: string
+      responses:
+        "204":
+          description: url deleted successfully
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/Pet'
+          headers: {}
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+      security:
+        - bearer: []
+  /sniffer/{queueId}/export:
+    get:
+      tags:
+        - url sniffer
+      summary: Export to CSV
+      description: Export queue data to csv file
+      operationId: exportToCsv
+      parameters:
+        - name: queueId
+          in: path
+          schema:
+            type: string
+          description: Provide queueId in path parameter
+          required: true
+      responses:
+        "200":
+          description: Success
+        "404":
+          description: No data found for this queueId
+        "401":
+          description: Unauthorized User
+      deprecated: false
+      security:
+        - bearer: []
+  /payments:
+    post:
+      tags:
+        - payment
+      summary: Create a stripe checkout session for user
+      description: Generate stripe checkout for credits to be bought
+      operationId: createCheckoutSession
+      requestBody:
+        description: Checkout session required object
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutSessionRequest"
+        required: true
+      responses:
+        "303":
+          description: Redirect url for stripe session
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: "#/components/schemas/CheckoutSessionRequest"
+        "500":
+          description: Something went wrong, Please try again later
+      security:
+        - bearer: []
+  /payments/purchasing-history:
+    get:
+      tags:
+        - payment
+      summary: get the history of all credits purchasings
+      description: get payment history for credits
+      operationId: purchasingHistory
+      responses:
+        "200":
+          description: successful operation
+          # content:
+          #   application/json:
+          #     schema:
+          #       $ref: '#/components/schemas/Pet'
+          headers: {}
+        "500":
+          description: Something went wrong, Please try again later
+      deprecated: false
+      security:
+        - bearer: []
+components:
+  schemas:
+    SignUpRequest:
+      title: SignUpRequest
+      required:
+        - first_name
+        - last_name
+        - email
+        - password
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+      example:
+        first_name: super
+        last_name: striker
+        email: superstriker707@gmail.com
+        password: test1234
+    LoginRequest:
+      title: LoginRequest
+      required:
+        - email
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      example:
+        email: superstriker707@gmail.com
+        password: test1234
+    ForgotPasswordRequest:
+      title: ForgotPasswordRequest
+      required:
+        - email
+      type: object
+      properties:
+        email:
+          type: string
+      example:
+        email: superstriker707@gmail.com
+    ResetPasswordRequest:
+      title: ResetPasswordRequest
+      required:
+        - code
+        - password
+      type: object
+      properties:
+        code:
+          type: string
+        password:
+          type: string
+      example:
+        code: "423423"
+        password: examplePassword123
+    EmailVerificationRequest:
+      title: EmailVerificationRequest
+      required:
+        - code
+      type: object
+      properties:
+        code:
+          type: string
+      example:
+        code: "720722"
+    UpdateMyProfileRequest:
+      title: UpdateMyProfileRequest
+      required:
+        - firstName
+        - lastName
+        - email
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+      example:
+        firstName: Test New First Name - Update
+        lastName: Test New Last Name - Update
+        email: changeEmailIfYouLike@gmail.com
+    CompareSniffedData:
+      title: CompareSniffedData
+      required:
+        - url
+      type: object
+      properties:
+        url:
+          type: string
+      example:
+        url: https://www.linkedin.com
+    AddUrlsRequest:
+      title: AddUrlsRequest
+      required:
+        - urlArr
+        - rrule
+        - currIndex
+        - controlSignal
+      type: object
+      properties:
+        urlArr:
+          type: array
+          items:
+            $ref: "#/components/schemas/UrlArr"
+          description: ""
+        rrule:
+          type: string
+        currIndex:
+          type: integer
+          format: int32
+        controlSignal:
+          $ref: "#/components/schemas/ControlSignal"
+      example:
+        urlArr:
+          - url: https://www.google.com/
+            depth: 0
+            queueId: test12345
+          - url: https://www.linkedin.com/
+            depth: 0
+            queueId: test12345
+        rrule: "Test Example 1"
+        currIndex: 0
+        controlSignal:
+          stop: false
+    CheckoutSessionRequest:
+      title: CheckoutSessionRequest
+      required:
+        - amountOfCredits
+      type: object
+      properties:
+        amountOfCredits:
+          type: string
+      example:
+        amountOfCredits: "15"
+    UrlArr:
+      title: UrlArr
+      required:
+        - url
+        - depth
+        - queueId
+      type: object
+      properties:
+        url:
+          type: string
+        depth:
+          type: integer
+          format: int32
+        queueId:
+          type: string
+      example:
+        url: https://www.google.com/
+        depth: 0
+        queueId: test12345
+    ControlSignal:
+      title: ControlSignal
+      required:
+        - stop
+      type: object
+      properties:
+        stop:
+          type: boolean
+      example:
+        stop: false
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
