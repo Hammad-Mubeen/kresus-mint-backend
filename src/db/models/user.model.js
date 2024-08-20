@@ -10,7 +10,7 @@ module.exports = {
       "email",
       "public_key",
       "private_key",
-      "address",
+      "vault_address",
       "sharedNFTEmails",
       "is_white_listed",
       "is_email_verified",

@@ -4,8 +4,52 @@ const UserModel = require("../db/models/user.model");
 const HTTP = require("../utils/httpCodes");
 const Logger = require("../utils/logger");
 const Sendgrid = require("../utils/sendgrid");
+const mintNFT = require("../smartContractInteraction/mintNFT");
 
 module.exports = {
+
+  mintNFT: async ({ipfsHash}) => {
+    try {
+
+      if(!ipfsHash)
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "IPFS Hash have not been passed."
+          }
+        };
+      }
+
+      // hard coded for now, it will come from kresus provider
+      let user = process.env.STATIC_USER;
+      let userData = await DB(UserModel.table).where({ id: user});
+      console.log("userData: ",userData);
+
+      if(userData.length == 0)
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "User don't exist against this id."
+          }
+        };
+      }
+
+      let result = await mintNFT.mintNFTHelper(ipfsHash,userData[0].private_key);
+
+      return {
+        code: HTTP.Success,
+        body: {
+          message: "Successfully minted NFT.",
+          result: result
+        },
+      };
+    } catch (err) {
+      Logger.error("user.service -> mintNFT \n", err);
+      throw err;
+    }
+  },
   shareYourCreation: async ({emails},user) => {
     try {
       // get user nft from kresus provider

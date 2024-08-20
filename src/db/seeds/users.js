@@ -14,7 +14,7 @@ exports.seed = async function (knex) {
       last_name: "Mubeen",
       email: "twoface03205622887@gmail.com",
       public_key: process.env.PUBLIC_KEY,
-      address: process.env.ADDRESS,
+      vault_address: process.env.VAULT_ADDRESS,
       private_key: process.env.PRIVATE_KEY,
       password: "$2a$10$yVtwpDRzgmLdZW8yUVCLpeTju1AJ9G4ZHhSquJuTgiRKOsXfnhhGK",
       sharedNFTEmails:{},

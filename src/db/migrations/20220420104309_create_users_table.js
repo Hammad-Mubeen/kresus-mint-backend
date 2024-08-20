@@ -12,7 +12,7 @@ exports.up = async function (knex) {
     t.string("email", 200).notNull();
     t.string("public_key", 200).notNull();
     t.string("private_key", 200).notNull();
-    t.string("address", 200).notNull();
+    t.string("vault_address", 200).notNull();
     t.boolean("is_white_listed").defaultTo(false);
     t.specificType('sharedNFTEmails', 'text ARRAY');
 
