@@ -16,7 +16,7 @@ const normalizePort = (val) => {
   return false;
 };
 
-const port = normalizePort(SERVER_PORT || "6000");
+const port = normalizePort(SERVER_PORT || "3000");
 console.log(`Server running at 127.0.0.1:${port}`);
 const server = http.createServer(app);
 server.listen(port);

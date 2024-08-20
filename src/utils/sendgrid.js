@@ -21,4 +21,14 @@ module.exports = {
     };
     return sgMail.send(options);
   },
+  shareYourCreation: async (to, templateValues) => {
+    let options = {
+      to: to,
+      from: from,
+      subject: "NFT shared",
+      html:
+        "<h4><b>Your friend have shared NFT with you.</b></h4>",
+    };
+    return sgMail.send(options);
+  },
 };

@@ -1,4 +1,4 @@
-# v2-datablitzer
+# kresus-mint-backend
 
 
 
@@ -15,7 +15,7 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://gitlab.com/Hammadr499/v2-datablitzer.git
+git remote add origin https://github.com/Hammad-Mubeen/kresus-mint-backend.git
 git branch -M main
 git push -uf origin main
 ```

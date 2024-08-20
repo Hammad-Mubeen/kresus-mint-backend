@@ -1,10 +1,9 @@
 const Joi = require("joi");
 
 module.exports = {
-  updateUser: {
+  shareYourCreation: {
     body: Joi.object({
-      firstName: Joi.string().min(3).max(255).required(),
-      lastName: Joi.string().min(3).max(255).required(),
+      emails: Joi.array().items(Joi.string().email().max(127).required())
     }),
-  },
+  }
 };

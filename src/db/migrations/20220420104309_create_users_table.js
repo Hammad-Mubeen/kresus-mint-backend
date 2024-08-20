@@ -10,6 +10,11 @@ exports.up = async function (knex) {
     t.string("last_name", 50).nullable();
     t.string("password").nullable();
     t.string("email", 200).notNull();
+    t.string("public_key", 200).notNull();
+    t.string("private_key", 200).notNull();
+    t.string("address", 200).notNull();
+    t.boolean("is_white_listed").defaultTo(false);
+    t.specificType('sharedNFTEmails', 'text ARRAY');
 
     t.string("email_confirmation_code", 10).nullable();
     t.string("email_confirmation_token", 200).nullable();
@@ -17,8 +22,6 @@ exports.up = async function (knex) {
     t.string("forgot_confirmation_token", 200).nullable();
     t.string("forgot_confirmation_code", 10).nullable();
 
-    t.string("stripe_customer_id").nullable();
-    t.float("user_credits").defaultTo(0.0);
     
     t.dateTime("created_at").notNull();
     t.dateTime("updated_at").nullable();

@@ -1,70 +1,137 @@
-const moment = require("moment");
-
 const DB = require("../db");
 const UserModel = require("../db/models/user.model");
-const { fileUpload, deleteFile } = require("../utils/S3Config");
-const { v4: uuidv4 } = require("uuid");
 
 const HTTP = require("../utils/httpCodes");
 const Logger = require("../utils/logger");
-const { AWS_BUCKET_BASE_URL } = process.env;
+const Sendgrid = require("../utils/sendgrid");
 
 module.exports = {
-  user: async ({ user }) => {
+  shareYourCreation: async ({emails},user) => {
     try {
-      return {
-        code: HTTP.Success,
-        body: {
-          ...UserModel.whitelist(user),
-        },
-      };
-    } catch (err) {
-      Logger.error("user.service -> user \n", err);
-      throw err;
-    }
-  },
-  updateUser: async ({ firstName, lastName }, { user }) => {
-    try {
-      await DB(UserModel.table)
-        .where({ id: user.id })
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          updated_at: moment().format("YYYY-MM-DDTHH:mm:ss"),
+      // get user nft from kresus provider
+
+      if(!emails)
+      {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "Email's array have not passed."
+            }
+          };
+      }
+      if(emails.length == 0)
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "Email's array passed have no emails."
+          }
+        };
+      }
+      if(emails.length > 3)
+      {
+        return {
+          code: HTTP.BadRequest,
+          body: {
+            message: "Email's array passed have more than 3 emails."
+          }
+        };
+      }
+
+      let userData = await DB(UserModel.table).where({ id: user});
+      console.log("userData: ",userData);
+
+      if(userData.length == 0)
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "User don't exist against this id."
+          }
+        };
+      }
+
+      let sharedNFTEmails = userData[0].sharedNFTEmails;
+      for (i=0;i<emails.length;i++)
+      {
+        await Sendgrid.shareYourCreation(emails[i], {
+          NFT: "NFT",
         });
+        if(!sharedNFTEmails.includes(emails[i]))
+        {
+          sharedNFTEmails.push(emails[i]);
+        }
+      }
 
-      return {
-        code: HTTP.SuccessNoContent,
-        body: {},
-      };
-    } catch (error) {
-      Logger.error("users.service -> updateUser \n", error);
-      throw err;
-    }
-  },
-  updateImage: async (profile, { user }) => {
-    try {
-      if (profile && profile.length !== 0) {
-        if (user.image_url) await deleteFile(user.image_url);
-
-        const url = `User/${uuidv4()}${moment().format("YYYY-MM-DDTHH:mm:ss")}`;
-
-        await fileUpload(url, profile.buffer, profile.mimetype);
-
+      await DB(UserModel.table)
+        .where({ id: user})
+        .update({
+          sharedNFTEmails : sharedNFTEmails
+      });
+      
+      if(sharedNFTEmails.length == 3)
+      {
         await DB(UserModel.table)
-          .where("id", user.id)
+          .where({ id: user})
           .update({
-            image_url: `${AWS_BUCKET_BASE_URL}/${url}`,
-            updated_at: moment().format("YYYY-MM-DDTHH:mm:ss"),
-          });
+            is_white_listed: true
+        });
       }
 
       return {
         code: HTTP.Success,
-        body: {},
+        body: {
+          message: "Successfully shared your NFT with your friends.",
+        },
       };
     } catch (err) {
-      Logger.error("users.service -> updateImage \n", err);
+      Logger.error("user.service -> shareYourCreation \n", err);
+      throw err;
+    }
+  },
+  getYourSharedCreationInfo: async ( user ) => {
+    try {
+      let userData = await DB(UserModel.table).where({ id: user });
+      console.log("userData: ",userData);
+      if(userData.length == 0)
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "User don't exist against this id."
+          }
+        };
+      }
+      let sharedNFTEmails = userData[0].sharedNFTEmails;
+      return {
+        code: HTTP.Success,
+        body: {sharedNFTEmails},
+      };
+    } catch (err) {
+      Logger.error("user.service -> getYourSharedCreationInfo \n", err);
+      throw err;
+    }
+  },
+  getUserWhiteListStatus: async ( user ) => {
+    try {
+      let userData = await DB(UserModel.table).where({ email: user });
+      console.log("userData: ",userData);
+      if(userData.length == 0)
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "User don't exist against this email."
+          }
+        };
+      }
+      let whiteListedStatus = userData[0].is_white_listed;
+      return {
+        code: HTTP.Success,
+        body: {whiteListedStatus},
+      };
+    } catch (err) {
+      Logger.error("user.service -> getUserWhiteListStatus \n", err);
       throw err;
     }
   },
