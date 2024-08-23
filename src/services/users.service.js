@@ -1,5 +1,7 @@
+require("dotenv").config();
 const DB = require("../db");
 const UserModel = require("../db/models/user.model");
+const NFTModel = require("../db/models/nfts.model");
 
 const HTTP = require("../utils/httpCodes");
 const Logger = require("../utils/logger");
@@ -8,7 +10,7 @@ const mintNFT = require("../smartContractInteraction/mintNFT");
 
 module.exports = {
 
-  mintNFT: async ({ipfsHash}) => {
+  mintNFT: async ({ ipfsHash, vaultAddress }) => {
     try {
 
       if(!ipfsHash)
@@ -21,28 +23,37 @@ module.exports = {
         };
       }
 
-      // hard coded for now, it will come from kresus provider
-      let user = process.env.STATIC_USER;
-      let userData = await DB(UserModel.table).where({ id: user});
+      if(!vaultAddress)
+      {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "vaultAddress have not been passed."
+            }
+          };
+      }
+
+      let result = await mintNFT.mintNFTHelper(ipfsHash,vaultAddress,process.env.PRIVATE_KEY);
+
+      let userData = await DB(UserModel.table).where({vaultAddress: vaultAddress});
       console.log("userData: ",userData);
 
       if(userData.length == 0)
       {
-        return {
-          code: HTTP.NotFound,
-          body: {
-            message: "User don't exist against this id."
-          }
-        };
+        console.log("User don't exist against this vaultAddress, creating new user");
+        const newUser = await DB(UserModel.table)
+        .insert({
+          vaultAddress,
+        })
+        .returning("*");
+        console.log("newUser: ",newUser);
       }
-
-      let result = await mintNFT.mintNFTHelper(ipfsHash,userData[0].private_key);
-
+      
       return {
         code: HTTP.Success,
         body: {
-          message: "Successfully minted NFT.",
-          result: result
+          message: "Successfully minted NFT on the vaultAddress = ." + vaultAddress,
+          NFTHash: result
         },
       };
     } catch (err) {
@@ -50,10 +61,55 @@ module.exports = {
       throw err;
     }
   },
-  shareYourCreation: async ({emails},user) => {
+  shareYourCreation: async ({vaultAddress, name, description,nftId, nftURL, emails}) => {
     try {
-      // get user nft from kresus provider
 
+      console.log("name: ",name);
+      if(!vaultAddress)
+      {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "vaultAddress have not passed."
+            }
+          };
+      }
+      if(!nftId)
+      {
+            return {
+              code: HTTP.NotFound,
+              body: {
+                message: "nftId have not passed."
+              }
+            };
+      }
+      if(!name)
+        {
+              return {
+                code: HTTP.NotFound,
+                body: {
+                  message: "nft name have not passed."
+                }
+              };
+        }
+      if(!description)
+      {
+            return {
+              code: HTTP.NotFound,
+              body: {
+                message: "nft description have not passed."
+              }
+            };
+      }
+      if(!nftURL)
+      {
+            return {
+              code: HTTP.NotFound,
+              body: {
+                message: "nftURL have not passed."
+              }
+            };
+      }
       if(!emails)
       {
           return {
@@ -72,51 +128,66 @@ module.exports = {
           }
         };
       }
-      if(emails.length > 3)
-      {
-        return {
-          code: HTTP.BadRequest,
-          body: {
-            message: "Email's array passed have more than 3 emails."
-          }
-        };
-      }
 
-      let userData = await DB(UserModel.table).where({ id: user});
+      let userData = await DB(UserModel.table).where({ vaultAddress: vaultAddress});
       console.log("userData: ",userData);
-
+      
       if(userData.length == 0)
       {
         return {
           code: HTTP.NotFound,
           body: {
-            message: "User don't exist against this id."
+            message: "User don't exist against this vaultAddress. Please mint an nft first to share."
           }
         };
       }
 
-      let sharedNFTEmails = userData[0].sharedNFTEmails;
+      let nftData = await DB(NFTModel.table).where({ nftId: nftId});
+      console.log("nftData: ",nftData);
+      
+      if(nftData.length == 0)
+      {
+          console.log("NFT is not created against this nftId, creating nft data");
+          nftData = await DB(NFTModel.table)
+          .insert({
+            nftId,
+            nftURL,
+            name,
+            description,
+            vaultAddress,
+            sharedNFTEmails: {}
+          })
+          .returning("*");
+          console.log("new nftData: ",nftData);
+      }
+
+      let sharedNFTEmails = nftData[0].sharedNFTEmails;
       for (i=0;i<emails.length;i++)
       {
-        await Sendgrid.shareYourCreation(emails[i], {
-          NFT: "NFT",
-        });
+        await Sendgrid.shareYourCreation(
+          emails[i],
+          vaultAddress,
+          nftId,
+          name,
+          description,
+          nftURL
+        );
         if(!sharedNFTEmails.includes(emails[i]))
         {
           sharedNFTEmails.push(emails[i]);
         }
       }
 
-      await DB(UserModel.table)
-        .where({ id: user})
+      await DB(NFTModel.table)
+        .where({ nftId: nftId})
         .update({
           sharedNFTEmails : sharedNFTEmails
       });
       
-      if(sharedNFTEmails.length == 3)
+      if(sharedNFTEmails.length == 1)
       {
         await DB(UserModel.table)
-          .where({ id: user})
+          .where({ vaultAddress: vaultAddress})
           .update({
             is_white_listed: true
         });
@@ -133,20 +204,22 @@ module.exports = {
       throw err;
     }
   },
-  getYourSharedCreationInfo: async ( user ) => {
+  getYourSharedCreationInfo: async ( vaultAddress,nftId ) => {
     try {
-      let userData = await DB(UserModel.table).where({ id: user });
-      console.log("userData: ",userData);
-      if(userData.length == 0)
+      console.log("vaultAddress: ",vaultAddress);
+      console.log("nftId: ",nftId);
+      let nftData = await DB(NFTModel.table).where({ nftId: nftId, vaultAddress:vaultAddress });
+      console.log("nftData: ",nftData);
+      if(nftData.length == 0)
       {
         return {
           code: HTTP.NotFound,
           body: {
-            message: "User don't exist against this id."
+            message: "NFT don't exist against this id."
           }
         };
       }
-      let sharedNFTEmails = userData[0].sharedNFTEmails;
+      let sharedNFTEmails = nftData[0].sharedNFTEmails;
       return {
         code: HTTP.Success,
         body: {sharedNFTEmails},
@@ -158,14 +231,14 @@ module.exports = {
   },
   getUserWhiteListStatus: async ( user ) => {
     try {
-      let userData = await DB(UserModel.table).where({ email: user });
+      let userData = await DB(UserModel.table).where({ vaultAddress: user });
       console.log("userData: ",userData);
       if(userData.length == 0)
       {
         return {
           code: HTTP.NotFound,
           body: {
-            message: "User don't exist against this email."
+            message: "User don't exist against this vaultAddress."
           }
         };
       }

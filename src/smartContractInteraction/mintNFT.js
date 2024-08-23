@@ -5,18 +5,18 @@ const abi =require ("./abi/nftABI");
 const contractAddress = process.env.NFT_CONTRACT_HASH;
 const infuraAPI = process.env.INFURA_API;
 
-async function mintNFTHelper(IPFSHash,privateKey) 
+async function mintNFTHelper(IPFSHash,vaultAddress,privateKey) 
 {
     const web3 = new Web3(infuraAPI); 
     const contract = new web3.eth.Contract(abi, contractAddress);
     const account = web3.eth.accounts.wallet.add(privateKey);
 
     const gasEstimate = await contract.methods
-      .mintNFT(account[0].address,IPFSHash)
+      .mintNFT(vaultAddress,IPFSHash)
       .estimateGas({ from: account[0].address });
     console.log(gasEstimate);
     
-    const encode = contract.methods.mintNFT(account[0].address,IPFSHash).encodeABI();
+    const encode = contract.methods.mintNFT(vaultAddress,IPFSHash).encodeABI();
 
     const txParams = {
         gas:gasEstimate,

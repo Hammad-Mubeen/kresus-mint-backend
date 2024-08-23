@@ -13,7 +13,7 @@ module.exports = {
       });
   },
   shareYourCreation: function (req, res, next) {
-    UserService.shareYourCreation(req.body, req.params.id)
+    UserService.shareYourCreation(req.body, req)
       .then((resp) => {
         return Response.Send.Raw(res, resp.code, resp.body);
       })
@@ -22,7 +22,7 @@ module.exports = {
       });
   },
   getYourSharedCreationInfo: function (req, res) {
-    UserService.getYourSharedCreationInfo(req.params.id)
+    UserService.getYourSharedCreationInfo(req.params.vaultAddress,req.params.nftId)
       .then((resp) => {
         return Response.Send.Raw(res, resp.code, resp.body);
       })
@@ -31,7 +31,7 @@ module.exports = {
       });
   },
   getUserWhiteListStatus: function (req, res) {
-    UserService.getUserWhiteListStatus(req.params.email)
+    UserService.getUserWhiteListStatus(req.params.vaultAddress)
       .then((resp) => {
         return Response.Send.Raw(res, resp.code, resp.body);
       })

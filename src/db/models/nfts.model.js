@@ -1,10 +1,14 @@
 const whitelist = require("../../utils/whitelist");
 
 module.exports = {
-  table: "users",
+  table: "nfts",
   whitelist: (data) =>
     whitelist(data, [
       "vaultAddress",
-      "is_white_listed"
+      "nftId",
+      "name",
+      "description",
+      "nftURL",
+      "sharedNFTEmails"
     ]),
 };
