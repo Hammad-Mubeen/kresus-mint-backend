@@ -1,9 +1,31 @@
-#!/usr/bin/env node
 require("dotenv").config();
-const debug = require("debug")("99starz:server");
+const express = require("express");
+const cors = require("cors");
+const errorMiddleware = require("./src/middlewares/error");
+const headerAccessMiddleware = require("./src/middlewares/headerAccess");
+
+const debug = require("debug")("kresis-mint:server");
 const http = require("http");
-const app = require("../src/app");
+const apiRoutes = require("./src/routes/index");
 const { SERVER_PORT } = process.env;
+
+const app = express();
+
+app.use(headerAccessMiddleware, cors());
+app.use((req, res, next) => {
+  if (req.originalUrl.endsWith("/webhook")) {
+    next();
+  } else {
+    express.json({ limit: "50mb" })(req, res, next);
+  }
+});
+
+app.get("/", function (req, res) {
+  return res.send("Kresus Mint Backend APIs");
+});
+
+app.use("/v1", apiRoutes);
+app.use(errorMiddleware);
 
 const normalizePort = (val) => {
   const port = parseInt(val, 10);
@@ -47,4 +69,4 @@ const onListening = () => {
 server.on("error", onError);
 server.on("listening", onListening);
 
-module.exports = server;
+module.exports = app;
