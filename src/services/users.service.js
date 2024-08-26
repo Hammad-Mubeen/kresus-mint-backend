@@ -33,14 +33,15 @@ module.exports = {
           };
       }
 
-      const { web3,contract,account } = initializeCall();
+      const { web3,contract,account,nonce } = await initializeCall();
       const {txCostInEther} = await getGasPrice(web3,contract,account,vaultAddress,"ipfs://" + ipfsHash);
-
+     
       return {
         code: HTTP.Success,
         body: {
-          message: "Successfully estimated gas Price." + txCostInEther,
-          txCostInEther : txCostInEther
+          message: "Successfully estimated gas Price.",
+          txCostInEther : txCostInEther,
+          nonce: nonce.toString()
         },
       };
     } catch (err) {

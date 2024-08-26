@@ -2,12 +2,14 @@ require("dotenv").config();
 const  { Web3 } = require("web3");
 const abi =require ("./abi/nftABI");
 
-function initializeCall()
+async function initializeCall()
 {
   const web3 = new Web3(process.env.INFURA_API); 
   const contract = new web3.eth.Contract(abi, process.env.NFT_CONTRACT_HASH);
   const account = web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY);
-  return { web3, contract, account };
+  const nonce = await web3.eth.getTransactionCount(account[0].address);
+  console.log("nonce: ",nonce);
+  return { web3, contract, account, nonce};
 }
 
 async function getGasPrice(web3,contract,account,vaultAddress,IPFSHash)
@@ -31,7 +33,7 @@ async function getGasPrice(web3,contract,account,vaultAddress,IPFSHash)
 
 async function mintNFTHelper(IPFSHash,vaultAddress) 
 {
-    const { web3, contract, account } = initializeCall();
+    const { web3, contract, account} = await initializeCall();
     const {gasEstimate} = await getGasPrice(web3,contract,account,vaultAddress,IPFSHash);
     const encode = contract.methods.mintNFT(vaultAddress,IPFSHash).encodeABI();
     const txParams = {
