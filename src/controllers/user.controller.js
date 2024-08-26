@@ -30,6 +30,25 @@ module.exports = {
         next(err);
       });
   },
+  getMintGasPrice: function (req, res) {
+    UserService.getMintGasPrice(req.params.vaultAddress,req.params.ipfsHash)
+      .then((resp) => {
+        return Response.Send.Raw(res, resp.code, resp.body);
+      })
+      .catch((err) => {
+        console.log("err: ",err);
+        next(err);
+      });
+  },
+  getPriceConversion: function (req, res) {
+    UserService.getPriceConversion(req.params.symbolforconversion,req.params.symboltoconvertto,req.params.amount)
+      .then((resp) => {
+        return Response.Send.Raw(res, resp.code, resp.body);
+      })
+      .catch((err) => {
+        next(err);
+      });
+  },
   getUserWhiteListStatus: function (req, res) {
     UserService.getUserWhiteListStatus(req.params.vaultAddress)
       .then((resp) => {

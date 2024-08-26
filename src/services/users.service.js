@@ -1,15 +1,116 @@
 require("dotenv").config();
 const DB = require("../db");
+const rp = require("request-promise");
 const UserModel = require("../db/models/user.model");
 const NFTModel = require("../db/models/nfts.model");
 
 const HTTP = require("../utils/httpCodes");
 const Logger = require("../utils/logger");
 const Sendgrid = require("../utils/sendgrid");
-const mintNFT = require("../smartContractInteraction/mintNFT");
+const { mintNFTHelper, getGasPrice, initializeCall} = require("../smartContractInteraction/mintNFT");
 
 module.exports = {
 
+  getMintGasPrice: async (vaultAddress,ipfsHash) => {
+    try {
+
+      if(!vaultAddress)
+      {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "vaultAddress have not been passed."
+            }
+          };
+      }
+      if(!ipfsHash)
+      {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "IPFS Hash have not been passed."
+            }
+          };
+      }
+
+      const { web3,contract,account } = initializeCall();
+      const {txCostInEther} = await getGasPrice(web3,contract,account,vaultAddress,"ipfs://" + ipfsHash);
+
+      return {
+        code: HTTP.Success,
+        body: {
+          message: "Successfully estimated gas Price." + txCostInEther,
+          txCostInEther : txCostInEther
+        },
+      };
+    } catch (err) {
+      Logger.error("user.service -> getMintGasPrice \n", err);
+      throw err;
+    }
+  },
+  getPriceConversion: async ( symbolforconversion, symboltoconvertto ,amount ) => {
+    try {
+
+      if(!symbolforconversion)
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "symbolforconversion have not been passed."
+          }
+        };
+      }
+
+      if(!symboltoconvertto)
+      {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "symboltoconvertto have not been passed."
+            }
+          };
+      }
+
+      if(!amount)
+      {
+            return {
+              code: HTTP.NotFound,
+              body: {
+                message: "amount have not been passed."
+              }
+            };
+      }
+      
+      const requestOptions = {
+        method: "GET",
+        uri: "https://pro-api.coinmarketcap.com/v1/tools/price-conversion",
+        qs: {
+          amount: amount,
+          symbol: symbolforconversion,
+          convert: symboltoconvertto,
+        },
+        headers: {
+          "X-CMC_PRO_API_KEY": process.env.COIN_MARKET_CAP_API_KEY,
+        },
+        json: true,
+        gzip: true,
+      };
+  
+      let response = await rp(requestOptions);
+      console.log("API call response: ", response.data.quote);
+      
+      return {
+        code: HTTP.Success,
+        body: {
+          message: "Successfully converted Eth into USD.",
+          conversion: response.data.quote.USD.price
+        },
+      };
+    } catch (err) {
+      Logger.error("user.service -> getPriceConversion \n", err);
+      throw err;
+    }
+  },
   mintNFT: async ({ ipfsHash, vaultAddress }) => {
     try {
 
@@ -33,7 +134,7 @@ module.exports = {
           };
       }
 
-      let result = await mintNFT.mintNFTHelper(ipfsHash,vaultAddress,process.env.PRIVATE_KEY);
+      let result = await mintNFTHelper(ipfsHash,vaultAddress);
 
       let userData = await DB(UserModel.table).where({vaultAddress: vaultAddress});
       console.log("userData: ",userData);
