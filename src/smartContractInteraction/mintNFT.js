@@ -33,8 +33,8 @@ async function getGasPrice(web3,contract,account,vaultAddress,IPFSHash)
 
 async function mintNFTHelper(IPFSHash,vaultAddress) 
 {
-    const { web3, contract, account} = await initializeCall();
-    const {gasEstimate} = await getGasPrice(web3,contract,account,vaultAddress,IPFSHash);
+    const { web3, contract, account,nonce} = await initializeCall();
+    const {gasEstimate,txCostInEther} = await getGasPrice(web3,contract,account,vaultAddress,IPFSHash);
     const encode = contract.methods.mintNFT(vaultAddress,IPFSHash).encodeABI();
     const txParams = {
         gas:gasEstimate,
