@@ -1,8 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
 const errorMiddleware = require("./src/middlewares/error");
-const headerAccessMiddleware = require("./src/middlewares/headerAccess");
 
 const debug = require("debug")("kresis-mint:server");
 const http = require("http");
@@ -11,7 +9,20 @@ const { SERVER_PORT } = process.env;
 
 const app = express();
 
-app.use(headerAccessMiddleware, cors());
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "OPTIONS, GET, POST, PUT, PATCH, DELETE"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   if (req.originalUrl.endsWith("/webhook")) {
     next();
