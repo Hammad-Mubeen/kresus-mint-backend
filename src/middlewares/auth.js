@@ -18,7 +18,7 @@ module.exports = async (req, res, next) => {
 
         const user = await DB.select("*")
           .from(`${UserModel.table}`)
-          .where("id", decoded.id)
+          .where("email", decoded.email)
           .first();
         if (!user) {
           return Response.Send.Unauthorized(res, {

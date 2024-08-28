@@ -2,6 +2,11 @@ const Joi = require("joi");
 const { mintNFT } = require("../services/users.service");
 
 module.exports = {
+  onboarding: {
+    body: Joi.object({
+      token: Joi.string().required()
+    }),
+  },
   shareYourCreation: {
     body: Joi.object({
       vaultAddress : Joi.string().required(),
@@ -15,7 +20,8 @@ module.exports = {
   mintNFT: {
     body: Joi.object({
       ipfsHash: Joi.string().required(),
-      vaultAddress: Joi.string().required()
+      vaultAddress: Joi.string().required(),
+      params: Joi.object().required()
     }),
   }
 };

@@ -9,6 +9,7 @@ exports.up = async function (knex) {
     t.string("name", 200).notNull();
     t.string("description", 200).notNull();
     t.string("nftURL", 200).notNull();
+    t.string("email", 200).notNull();
     t.string("vaultAddress", 200).notNull();
     t.specificType('sharedNFTEmails', 'text ARRAY');
   });

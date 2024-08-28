@@ -1,6 +1,10 @@
 require("dotenv").config();
+const { Magic } = require('@magic-sdk/admin');
+const jwt = require("jsonwebtoken");
 const DB = require("../db");
 const rp = require("request-promise");
+const { recoverPersonalSignature } = require("@metamask/eth-sig-util");
+
 const UserModel = require("../db/models/user.model");
 const NFTModel = require("../db/models/nfts.model");
 
@@ -11,6 +15,55 @@ const { mintNFTHelper, getGasPrice, initializeCall} = require("../smartContractI
 
 module.exports = {
 
+  onboarding: async ({ token }) => {
+    try {
+
+      if(!token)
+      {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "token have not been passed."
+            }
+          };
+      }
+      console.log("token: ",token);
+      
+      const magic = await Magic.init(process.env.MAGIC_SECRET_KEY);
+      magic.token.validate(token);
+      
+      console.log("DID Token verified successfully with magic admin sdk.");
+      let user = await magic.users.getMetadataByToken(token);
+      console.log("user: ",user);
+
+      let userData = await DB(UserModel.table).where({email: user.email});
+      console.log("userData: ",userData);
+
+      if(userData.length == 0)
+      {
+        console.log("User don't exist against this email, creating new user.");
+        const newUser = await DB(UserModel.table)
+        .insert({
+          email: user.email,
+        })
+        .returning("*");
+        console.log("newUser: ",newUser);
+      }
+      return {
+        code: HTTP.Success,
+        body: {
+          message: "DID Token Verified.",
+          access_token: jwt.sign({ email: user.email }, process.env.AUTH_SECRET, {
+            expiresIn: "7d",
+          }),
+        },
+      };
+      
+    } catch (err) {
+      Logger.error("user.service -> onboarding \n", err);
+      throw err;
+    }
+  },
   getMintGasPrice: async (vaultAddress,ipfsHash) => {
     try {
 
@@ -112,7 +165,7 @@ module.exports = {
       throw err;
     }
   },
-  mintNFT: async ({ ipfsHash, vaultAddress }) => {
+  mintNFT: async ({ ipfsHash, vaultAddress, params },{ user }) => {
     try {
 
       if(!ipfsHash)
@@ -134,36 +187,82 @@ module.exports = {
             }
           };
       }
-
-      let result = await mintNFTHelper(ipfsHash,vaultAddress);
-
-      let userData = await DB(UserModel.table).where({vaultAddress: vaultAddress});
-      console.log("userData: ",userData);
-
-      if(userData.length == 0)
+      if(!params)
       {
-        console.log("User don't exist against this vaultAddress, creating new user");
-        const newUser = await DB(UserModel.table)
-        .insert({
-          vaultAddress,
-        })
-        .returning("*");
-        console.log("newUser: ",newUser);
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "params have not been passed."
+            }
+          };
       }
-      
-      return {
-        code: HTTP.Success,
-        body: {
-          message: "Successfully minted NFT on the vaultAddress = ." + vaultAddress,
-          NFTHash: result
-        },
-      };
+
+      console.log("params: ",params);
+
+      let msgData = {
+        signerAddress: params.signerAddress,
+        vaultAddress: params.vaultAddress,
+        ipfsHash: params.ipfsHash,
+      }
+      console.log("msgData: ",msgData);
+
+      const msgDataString = JSON.stringify(msgData);
+      console.log("msgDataString: ",msgDataString);
+
+      // recover the public address of the signer to verify
+      const recoveredAddress = recoverPersonalSignature({
+        data: msgDataString,
+        signature: params.signature,
+      });
+      console.log("recoveredAddress: ",recoveredAddress);
+
+      if(recoveredAddress.toLocaleLowerCase() === params.signerAddress.toLocaleLowerCase())
+      {
+        console.log("Signing success!");
+        let result = await mintNFTHelper(ipfsHash,vaultAddress);
+
+        let userData = await DB(UserModel.table).where({ email: user.email});
+        console.log("userData: ",userData);
+        
+        if(userData.length == 0)
+        {
+          return {
+            code: HTTP.NotFound,
+            body: {
+              message: "User don't exist against this email. Please register user first."
+            }
+          };
+        }
+
+        await DB(UserModel.table)
+          .where({ email: user.email})
+          .update({
+            vaultAddress: vaultAddress
+        });
+        
+        return {
+          code: HTTP.Success,
+          body: {
+            message: "Successfully minted NFT on the vaultAddress = ." + vaultAddress,
+            NFTHash: result
+          },
+        };   
+      }
+      else{
+        console.log("Signing failed!");
+        return {
+          code: HTTP.ServerError,
+          body: {
+            message: "Signing failed!"
+          }
+        };
+      }
     } catch (err) {
       Logger.error("user.service -> mintNFT \n", err);
       throw err;
     }
   },
-  shareYourCreation: async ({vaultAddress, name, description,nftId, nftURL, emails}) => {
+  shareYourCreation: async ({vaultAddress, name, description,nftId, nftURL, emails},{user}) => {
     try {
 
       console.log("name: ",name);
@@ -231,7 +330,7 @@ module.exports = {
         };
       }
 
-      let userData = await DB(UserModel.table).where({ vaultAddress: vaultAddress});
+      let userData = await DB(UserModel.table).where({ email: user.email});
       console.log("userData: ",userData);
       
       if(userData.length == 0)
@@ -239,7 +338,7 @@ module.exports = {
         return {
           code: HTTP.NotFound,
           body: {
-            message: "User don't exist against this vaultAddress. Please mint an nft first to share."
+            message: "User don't exist against this email. Please register user first."
           }
         };
       }
@@ -256,6 +355,7 @@ module.exports = {
             nftURL,
             name,
             description,
+            email:user.email,
             vaultAddress,
             sharedNFTEmails: {}
           })
@@ -289,7 +389,7 @@ module.exports = {
       if(sharedNFTEmails.length == 1)
       {
         await DB(UserModel.table)
-          .where({ vaultAddress: vaultAddress})
+          .where({ email: user.email})
           .update({
             is_white_listed: true
         });
@@ -306,11 +406,11 @@ module.exports = {
       throw err;
     }
   },
-  getYourSharedCreationInfo: async ( vaultAddress,nftId ) => {
+  getYourSharedCreationInfo: async ( vaultAddress,nftId,{user} ) => {
     try {
       console.log("vaultAddress: ",vaultAddress);
       console.log("nftId: ",nftId);
-      let nftData = await DB(NFTModel.table).where({ nftId: nftId, vaultAddress:vaultAddress });
+      let nftData = await DB(NFTModel.table).where({ nftId: nftId, email:user.email,vaultAddress:vaultAddress });
       console.log("nftData: ",nftData);
       if(nftData.length == 0)
       {
@@ -331,16 +431,16 @@ module.exports = {
       throw err;
     }
   },
-  getUserWhiteListStatus: async ( user ) => {
+  getUserWhiteListStatus: async ( {user} ) => {
     try {
-      let userData = await DB(UserModel.table).where({ vaultAddress: user });
+      let userData = await DB(UserModel.table).where({ email: user.email });
       console.log("userData: ",userData);
       if(userData.length == 0)
       {
         return {
           code: HTTP.NotFound,
           body: {
-            message: "User don't exist against this vaultAddress."
+            message: "User don't exist against this email."
           }
         };
       }

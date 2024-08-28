@@ -8,11 +8,13 @@ const userValidation = require("../validations/user.validation");
 const auth = require("../middlewares/auth");
 
 router
-  .post("/mintNFT", validate(userValidation.mintNFT), userController.mintNFT)
-  .get("/getYourSharedCreationInfo/:vaultAddress/:nftId",userController.getYourSharedCreationInfo)
-  .get("/getUserWhiteListStatus/:vaultAddress",userController.getUserWhiteListStatus)
-  .patch("/shareYourCreation", validate(userValidation.shareYourCreation), userController.shareYourCreation)
-  .get("/getMintGasPrice/:vaultAddress/:ipfsHash",userController.getMintGasPrice)
-  .get("/getPriceConversion/:symbolforconversion/:symboltoconvertto/:amount",userController.getPriceConversion);
+
+  .get("/getMintGasPrice/:vaultAddress/:ipfsHash", auth, userController.getMintGasPrice)
+  .get("/getPriceConversion/:symbolforconversion/:symboltoconvertto/:amount", auth, userController.getPriceConversion)
+  .get("/getYourSharedCreationInfo/:vaultAddress/:nftId", auth, userController.getYourSharedCreationInfo)
+  .get("/getUserWhiteListStatus", auth, userController.getUserWhiteListStatus)
+  .post("/onboarding", validate(userValidation.onboarding), userController.onboarding)
+  .post("/mintNFT", [auth, validate(userValidation.mintNFT)], userController.mintNFT)
+  .patch("/shareYourCreation", [auth, validate(userValidation.shareYourCreation)], userController.shareYourCreation);
 
 module.exports = router;

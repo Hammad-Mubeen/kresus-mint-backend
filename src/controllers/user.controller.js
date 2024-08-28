@@ -3,6 +3,15 @@ const Http = require("../utils/httpCodes");
 const UserService = require("../services/users.service");
 
 module.exports = {
+  onboarding: function (req, res, next) {
+    UserService.onboarding(req.body, req)
+      .then((resp) => {
+        return Response.Send.Raw(res, resp.code, resp.body);
+      })
+      .catch((err) => {
+        next(err);
+      });
+  },
   mintNFT: function (req, res, next) {
     UserService.mintNFT(req.body, req)
       .then((resp) => {
@@ -22,7 +31,7 @@ module.exports = {
       });
   },
   getYourSharedCreationInfo: function (req, res) {
-    UserService.getYourSharedCreationInfo(req.params.vaultAddress,req.params.nftId)
+    UserService.getYourSharedCreationInfo(req.params.vaultAddress,req.params.nftId,req)
       .then((resp) => {
         return Response.Send.Raw(res, resp.code, resp.body);
       })
@@ -31,7 +40,7 @@ module.exports = {
       });
   },
   getMintGasPrice: function (req, res) {
-    UserService.getMintGasPrice(req.params.vaultAddress,req.params.ipfsHash)
+    UserService.getMintGasPrice(req.params.vaultAddress,req.params.ipfsHash,req)
       .then((resp) => {
         return Response.Send.Raw(res, resp.code, resp.body);
       })
@@ -41,7 +50,7 @@ module.exports = {
       });
   },
   getPriceConversion: function (req, res) {
-    UserService.getPriceConversion(req.params.symbolforconversion,req.params.symboltoconvertto,req.params.amount)
+    UserService.getPriceConversion(req.params.symbolforconversion,req.params.symboltoconvertto,req.params.amount,req)
       .then((resp) => {
         return Response.Send.Raw(res, resp.code, resp.body);
       })
@@ -50,7 +59,7 @@ module.exports = {
       });
   },
   getUserWhiteListStatus: function (req, res) {
-    UserService.getUserWhiteListStatus(req.params.vaultAddress)
+    UserService.getUserWhiteListStatus(req)
       .then((resp) => {
         return Response.Send.Raw(res, resp.code, resp.body);
       })
