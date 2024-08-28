@@ -23,14 +23,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  if (req.originalUrl.endsWith("/webhook")) {
-    next();
-  } else {
-    express.json({ limit: "50mb" })(req, res, next);
-  }
-});
-
 app.get("/", function (req, res) {
   return res.send("Kresus Mint Backend APIs");
 });
