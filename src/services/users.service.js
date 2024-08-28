@@ -219,8 +219,7 @@ module.exports = {
       if(recoveredAddress.toLocaleLowerCase() === params.signerAddress.toLocaleLowerCase())
       {
         console.log("Signing success!");
-        //let result = await mintNFTHelper(ipfsHash,vaultAddress);
-        let result = "nfthash";
+        let result = await mintNFTHelper(ipfsHash,vaultAddress);
         let userData = await DB(UserModel.table).where({ email: user.email});
         console.log("userData: ",userData);
         
