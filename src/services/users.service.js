@@ -263,61 +263,59 @@ module.exports = {
   },
   shareYourCreation: async ({vaultAddress, name, description,nftId, nftURL, emails},{user}) => {
     try {
-
-      console.log("name: ",name);
       if(!vaultAddress)
       {
-          return {
-            code: HTTP.NotFound,
-            body: {
-              message: "vaultAddress have not passed."
-            }
-          };
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "vaultAddress have not passed."
+          }
+        };
       }
       if(!nftId)
       {
-            return {
-              code: HTTP.NotFound,
-              body: {
-                message: "nftId have not passed."
-              }
-            };
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "nftId have not passed."
+          }
+        };
       }
       if(!name)
-        {
-              return {
-                code: HTTP.NotFound,
-                body: {
-                  message: "nft name have not passed."
-                }
-              };
-        }
+      {
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "nft name have not passed."
+          }
+        };
+      }
       if(!description)
       {
-            return {
-              code: HTTP.NotFound,
-              body: {
-                message: "nft description have not passed."
-              }
-            };
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "nft description have not passed."
+          }
+        };
       }
       if(!nftURL)
       {
-            return {
-              code: HTTP.NotFound,
-              body: {
-                message: "nftURL have not passed."
-              }
-            };
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "nftURL have not passed."
+          }
+        };
       }
       if(!emails)
       {
-          return {
-            code: HTTP.NotFound,
-            body: {
-              message: "Email's array have not passed."
-            }
-          };
+        return {
+          code: HTTP.NotFound,
+          body: {
+            message: "Email's array have not passed."
+          }
+        };
       }
       if(emails.length == 0)
       {
@@ -365,17 +363,20 @@ module.exports = {
       let sharedNFTEmails = nftData[0].sharedNFTEmails;
       for (i=0;i<emails.length;i++)
       {
-        await Sendgrid.shareYourCreation(
-          emails[i],
-          vaultAddress,
-          nftId,
-          name,
-          description,
-          nftURL
-        );
-        if(!sharedNFTEmails.includes(emails[i]))
+        if(userData[0].email != emails[i])
         {
-          sharedNFTEmails.push(emails[i]);
+          await Sendgrid.shareYourCreation(
+            emails[i],
+            vaultAddress,
+            nftId,
+            name,
+            description,
+            nftURL
+          );
+          if(!sharedNFTEmails.includes(emails[i]))
+          {
+            sharedNFTEmails.push(emails[i]);
+          }
         }
       }
 
@@ -393,7 +394,6 @@ module.exports = {
             is_white_listed: true
         });
       }
-
       return {
         code: HTTP.Success,
         body: {
